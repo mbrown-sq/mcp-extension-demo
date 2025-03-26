@@ -17,7 +17,7 @@ readme = "README.md"
 license = {text = "MIT"}
 
 [project.urls]
-Homepage = "https://github.com/block/smarthub-extension"
+Homepage = "https://github.com/squareup/smarthub-extension"
 Documentation = "https://block.github.io/goose/docs/tutorials/custom-extensions"
 
 [build-system]

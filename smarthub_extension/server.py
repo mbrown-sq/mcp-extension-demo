@@ -22,32 +22,11 @@ app = FastAPI(
 )
 
 # Initialize MCP server
-mcp = FastMCP("smarthub")
+mcp = FastMCP(name="smarthub")
 
-# Mount MCP server to FastAPI app
-app.mount("/mcp", mcp.app)
-
-@app.on_event("startup")
-async def startup_event() -> None:
-    """Validate configuration on startup."""
-    if error := config.validate():
-        raise HTTPException(status_code=500, detail=error)
-    log_to_file("SmartHub MCP Server starting up...")
-
-@mcp.tool()
-async def test_snowflake_connection() -> ConnectionResponse:
-    """Test if we can connect to and query the SmartHub Snowflake tables.
-    
-    Returns:
-        ConnectionResponse: Dictionary containing connection status and role information
-    
-    Example:
-        ```python
-        result = await test_snowflake_connection()
-        if result["status"] == "success":
-            print(f"Connected as role: {result['role']}")
-        ```
-    """
+# Define core functionality
+async def _test_snowflake_connection() -> ConnectionResponse:
+    """Test if we can connect to and query the SmartHub Snowflake tables."""
     log_to_file("\n=== Testing Snowflake Connection ===")
     try:
         conn = get_snowflake_connection()
@@ -70,21 +49,8 @@ async def test_snowflake_connection() -> ConnectionResponse:
             message=str(e)
         )
 
-@mcp.tool()
-async def list_available_tables() -> TablesResponse:
-    """List all tables available in the APP_MERCH_GROWTH database.
-    
-    Returns:
-        TablesResponse: Dictionary containing list of available tables and their metadata
-    
-    Example:
-        ```python
-        result = await list_available_tables()
-        if result["status"] == "success":
-            for table in result["tables"]:
-                print(f"Table: {table['name']} in {table['schema']}")
-        ```
-    """
+async def _list_available_tables() -> TablesResponse:
+    """List all tables available in the APP_MERCH_GROWTH database."""
     log_to_file("Listing available tables...")
     try:
         conn = get_snowflake_connection()
@@ -118,25 +84,8 @@ async def list_available_tables() -> TablesResponse:
             message=str(e)
         )
 
-@mcp.tool()
-async def get_merchant_info(merchant_token: str) -> MerchantResponse:
-    """Get comprehensive information about a merchant using their token or business ID.
-    
-    Args:
-        merchant_token: Either a merchant token (e.g., 'MLM7X617NKATG') or 
-                       a business ID (e.g., '302718489')
-    
-    Returns:
-        MerchantResponse: Dictionary containing merchant information from various sources
-    
-    Example:
-        ```python
-        result = await get_merchant_info("MLM7X617NKATG")
-        if result["status"] == "success":
-            print(f"Business Name: {result['summary']['business_name']}")
-            print(f"Current AM: {result['summary']['current_am']}")
-        ```
-    """
+async def _get_merchant_info(merchant_token: str) -> MerchantResponse:
+    """Get comprehensive information about a merchant using their token or business ID."""
     log_to_file(f"Fetching merchant info for token/id: {merchant_token}")
     try:
         conn = get_snowflake_connection()
@@ -297,3 +246,42 @@ async def get_merchant_info(merchant_token: str) -> MerchantResponse:
             data_sources=[],
             message=str(e)
         )
+
+# Register FastAPI routes for MCP tools
+@app.post("/mcp/test_snowflake_connection")
+async def test_snowflake_connection() -> ConnectionResponse:
+    """Test if we can connect to and query the SmartHub Snowflake tables."""
+    return await _test_snowflake_connection()
+
+@app.post("/mcp/list_available_tables")
+async def list_available_tables() -> TablesResponse:
+    """List all tables available in the APP_MERCH_GROWTH database."""
+    return await _list_available_tables()
+
+@app.post("/mcp/get_merchant_info/{merchant_token}")
+async def get_merchant_info(merchant_token: str) -> MerchantResponse:
+    """Get comprehensive information about a merchant using their token or business ID."""
+    return await _get_merchant_info(merchant_token)
+
+# Register MCP tools
+@mcp.tool()
+async def test_snowflake_connection() -> ConnectionResponse:
+    """Test if we can connect to and query the SmartHub Snowflake tables."""
+    return await _test_snowflake_connection()
+
+@mcp.tool()
+async def list_available_tables() -> TablesResponse:
+    """List all tables available in the APP_MERCH_GROWTH database."""
+    return await _list_available_tables()
+
+@mcp.tool()
+async def get_merchant_info(merchant_token: str) -> MerchantResponse:
+    """Get comprehensive information about a merchant using their token or business ID."""
+    return await _get_merchant_info(merchant_token)
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Validate configuration on startup."""
+    if error := config.validate():
+        raise HTTPException(status_code=500, detail=error)
+    log_to_file("SmartHub MCP Server starting up...")

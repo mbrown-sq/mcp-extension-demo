@@ -2,9 +2,14 @@
 import os
 import pytest
 from unittest.mock import Mock, patch
+from fastapi.testclient import TestClient
 
 from smarthub_extension.config import Config
+from smarthub_extension.server import app
 from smarthub_extension.types import ConnectionResponse, TablesResponse, MerchantResponse
+
+# Create test client
+client = TestClient(app)
 
 # Test configuration
 @pytest.fixture
@@ -85,8 +90,9 @@ async def test_test_snowflake_connection(mock_config):
         mock_conn.cursor.return_value = mock_cursor
         mock_get_conn.return_value = mock_conn
         
-        from smarthub_extension.server import test_snowflake_connection
-        result = await test_snowflake_connection()
+        response = client.post("/mcp/test_snowflake_connection")
+        assert response.status_code == 200
+        result = response.json()
         
         assert result["status"] == "success"
         assert result["role"] == "test_role"
@@ -104,8 +110,9 @@ async def test_list_available_tables(mock_config):
         mock_conn.cursor.return_value = mock_cursor
         mock_get_conn.return_value = mock_conn
         
-        from smarthub_extension.server import list_available_tables
-        result = await list_available_tables()
+        response = client.post("/mcp/list_available_tables")
+        assert response.status_code == 200
+        result = response.json()
         
         assert result["status"] == "success"
         assert len(result["tables"]) == 1
@@ -129,8 +136,9 @@ async def test_get_merchant_info(mock_config):
         mock_conn.cursor.return_value = mock_cursor
         mock_get_conn.return_value = mock_conn
         
-        from smarthub_extension.server import get_merchant_info
-        result = await get_merchant_info("TEST123")
+        response = client.post("/mcp/get_merchant_info/TEST123")
+        assert response.status_code == 200
+        result = response.json()
         
         assert result["status"] == "success"
         assert result["summary"]["merchant_token"] == "TEST123"

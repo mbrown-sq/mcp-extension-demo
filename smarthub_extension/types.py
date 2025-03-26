@@ -1,5 +1,6 @@
 """Common types used across the SmartHub extension."""
-from typing import Dict, List, Optional, TypedDict, Union
+from typing import Dict, List, Optional, Union
+from typing_extensions import TypedDict
 
 class MerchantOwnership(TypedDict):
     merchant_token: str

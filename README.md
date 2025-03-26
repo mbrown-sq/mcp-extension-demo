@@ -1,94 +1,138 @@
 # SmartHub MCP Extension
 
-A Goose extension for accessing and managing SmartHub data through Snowflake.
+A natural language interface for SmartHub data and portfolio management.
 
 ## Features
 
-- Test Snowflake connectivity
-- List available SmartHub tables
-- Get merchant information by token or business ID
-- Query merchant portfolio data
-- Access SmartHub analytics
+- Natural language queries for merchant data
+- Comprehensive merchant information lookup
+- AM ownership and team data
+- Business relationship mapping
+- Integration with Goose AI assistant
 
 ## Installation
 
-Install from PyPI:
-
-```bash
-pip install smarthub-extension
-```
-
-## Configuration
-
-Add to your Goose configuration:
-
-```yaml
-extensions:
-  smarthub:
-    type: stdio
-    command: uvicorn smarthub_extension.server:app --transport stdio
-    environment:
-      SMARTHUB_LOG_FILE: /tmp/smarthub_mcp.log
-      PYTHONPATH: /path/to/smarthub_extension/src
-```
-
-### Environment Variables
-
-- `SNOWFLAKE_USER`: Your Snowflake username (required)
-- `SNOWFLAKE_ACCOUNT`: Snowflake account name (default: square)
-- `SMARTHUB_LOG_FILE`: Path to log file (default: /tmp/smarthub_mcp.log)
-
-## Usage
-
-### In Goose
-
-Once configured, the extension provides these tools:
-
-1. `test_snowflake_connection`: Test connectivity to Snowflake
-2. `list_available_tables`: List accessible SmartHub tables
-3. `get_merchant_info`: Get merchant details by token/ID
-
-Example:
-```python
-result = await test_snowflake_connection()
-tables = await list_available_tables()
-merchant = await get_merchant_info("MLM7X617NKATG")
-```
-
-### Development
-
-For local development:
-
 1. Clone the repository:
 ```bash
-git clone https://github.com/block/smarthub-extension
+git clone git@github.com:squareup/smarthub-extension.git
 cd smarthub-extension
 ```
 
-2. Create and activate virtual environment:
+2. Create a virtual environment:
 ```bash
 python -m venv venv
-source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 3. Install dependencies:
 ```bash
-pip install -e .
+pip install -e ".[test,dev]"
 ```
 
-4. Run the server:
+## Configuration
+
+1. Set up environment variables:
 ```bash
-uvicorn smarthub_extension.server:app --reload
+export SNOWFLAKE_USER="your_username"
+export SNOWFLAKE_ACCOUNT="your_account"
+export SNOWFLAKE_ROLE="your_role"
+export SNOWFLAKE_WAREHOUSE="your_warehouse"
+```
+
+2. Or create a configuration file:
+```python
+# config.py
+config = {
+    "snowflake_user": "your_username",
+    "snowflake_account": "your_account",
+    "snowflake_role": "your_role",
+    "snowflake_warehouse": "your_warehouse",
+    "log_file": "/path/to/log/file.log",
+    "debug": False
+}
+```
+
+## Example Queries
+
+### Basic Merchant Lookup
+
+```python
+# Look up merchant by token
+result = await get_merchant_info("MLM7X617NKATG")
+print(f"Business Name: {result['summary']['business_name']}")
+print(f"Current AM: {result['summary']['current_am']}")
+
+# Look up merchant by business ID
+result = await get_merchant_info("302718489")
+print(f"Merchant Token: {result['summary']['merchant_token']}")
+print(f"AM Team: {result['summary']['am_team']}")
+```
+
+### List Available Tables
+
+```python
+# Get all available tables
+result = await list_available_tables()
+for table in result["tables"]:
+    print(f"Table: {table['name']} in {table['schema']}")
+```
+
+### Test Connection
+
+```python
+# Verify Snowflake connection
+result = await test_snowflake_connection()
+if result["status"] == "success":
+    print(f"Connected as role: {result['role']}")
+else:
+    print(f"Connection failed: {result['message']}")
+```
+
+## Development
+
+### Running Tests
+
+```bash
+# Run all tests with coverage
+pytest tests/ -v --cov=smarthub_extension
+
+# Run specific test file
+pytest tests/test_server.py -v
+
+# Run tests and generate coverage report
+pytest tests/ -v --cov=smarthub_extension --cov-report=html
+```
+
+### Code Quality
+
+```bash
+# Run linter
+ruff check .
+
+# Run type checker
+mypy smarthub_extension
+
+# Format code
+black .
+```
+
+### Creating a Release
+
+1. Update version in `pyproject.toml`
+2. Create and push a tag:
+```bash
+git tag -a v0.1.2 -m "Release version 0.1.2"
+git push origin v0.1.2
 ```
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT License - see [LICENSE](LICENSE) for details
